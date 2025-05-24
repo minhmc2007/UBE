@@ -23,7 +23,7 @@ pip install UnityPy Pillow
 
 ## Installation
 
-1. Save the script as `unity_bundle_tool.py`
+1. Save the script as `script.py`
 2. Install required dependencies
 3. Run from command line
 
@@ -32,7 +32,7 @@ pip install UnityPy Pillow
 ### Extract a Bundle
 
 ```bash
-python unity_bundle_tool.py extract YourBundleFile.bundle ExtractedFolder/
+python script.py extract YourBundleFile.bundle ExtractedFolder/
 ```
 
 This will create:
@@ -50,7 +50,7 @@ ExtractedFolder/
 ### Repack a Bundle
 
 ```bash
-python unity_bundle_tool.py repack ExtractedFolder/ RepackedBundle.bundle
+python script.py repack ExtractedFolder/ RepackedBundle.bundle
 ```
 
 **Important**: The input directory must contain the `manifest.json` file created during extraction. The original bundle file referenced in the manifest must still exist and be accessible.
@@ -102,7 +102,7 @@ The script includes comprehensive error handling for:
 ## Command Line Help
 
 ```bash
-python unity_bundle_tool.py --help
-python unity_bundle_tool.py extract --help
-python unity_bundle_tool.py repack --help
+python script.py --help
+python script.py extract --help
+python script.py repack --help
 ```
