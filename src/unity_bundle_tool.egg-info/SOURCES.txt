@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+src/unity_bundle_tool/__init__.py
+src/unity_bundle_tool/__main__.py
+src/unity_bundle_tool/cli.py
+src/unity_bundle_tool.egg-info/PKG-INFO
+src/unity_bundle_tool.egg-info/SOURCES.txt
+src/unity_bundle_tool.egg-info/dependency_links.txt
+src/unity_bundle_tool.egg-info/entry_points.txt
+src/unity_bundle_tool.egg-info/requires.txt
+src/unity_bundle_tool.egg-info/top_level.txt

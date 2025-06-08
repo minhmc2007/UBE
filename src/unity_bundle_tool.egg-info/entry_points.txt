@@ -1,0 +1,2 @@
+[console_scripts]
+ubt = unity_bundle_tool.cli:main

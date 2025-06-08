@@ -1,50 +1,6 @@
-# UBT (Unity Bundle Tool)
+# Unity Bundle Extractor/Repacker
 
-A powerful, user-friendly command-line tool to extract and repack Unity asset bundles. Built with Python and UnityPy.
-
-**Developer:** [minhmc2007](https://github.com/minhmc2007)
-
----
-
-## Installation
-
-Install the tool directly from PyPI:
-
-```bash
-pip install unity-bundle-tool
-```
-
-## Usage
-
-Once installed, you can use the `ubt` command from your terminal.
-
-### Extract a Bundle
-
-```bash
-ubt extract path/to/your/asset.bundle path/to/output_folder/
-```
-
-This will create:
-```
-output_folder/
-├── manifest.json           # Asset tracking manifest
-├── Textures/              # PNG files from Texture2D/Sprite assets
-├── TextAssets/            # TXT/bytes files from TextAsset objects
-├── MonoBehaviours_JSON/   # JSON files from MonoBehaviour typetrees
-├── MonoBehaviours_DAT/    # Raw binary data from MonoBehaviours
-├── AudioClips/            # WAV or raw audio files
-└── OtherAssets/           # Generic binary data from other asset types
-```
-
-### Repack a Bundle
-
-After modifying files, repack them into a new bundle:
-
-```bash
-ubt repack path/to/output_folder/ path/to/new_repacked.bundle
-```
-
-**Important**: The input directory must contain the `manifest.json` file created during extraction. The original bundle file referenced in the manifest must still exist and be accessible.
+A Python script for extracting and repacking Unity .bundle files using UnityPy. This tool allows you to extract various asset types from Unity bundles, modify them, and repack them back into bundle format.
 
 ## Features
 
@@ -58,6 +14,43 @@ ubt repack path/to/output_folder/ path/to/new_repacked.bundle
 - Repack modified assets back into Unity bundle format
 - Automatic file sanitization and organization
 - Detailed manifest tracking for reliable repacking
+
+## Installation
+
+```bash
+pip install unity-bundle-tool
+```
+Or use this script.py
+
+For install via pip, you can run 'ubt' in your terminal 
+
+## Usage
+
+### Extract a Bundle
+
+```bash
+python script.py extract YourBundleFile.bundle ExtractedFolder/
+```
+
+This will create:
+```
+ExtractedFolder/
+├── manifest.json           # Asset tracking manifest
+├── Textures/              # PNG files from Texture2D/Sprite assets
+├── TextAssets/            # TXT/bytes files from TextAsset objects
+├── MonoBehaviours_JSON/   # JSON files from MonoBehaviour typetrees
+├── MonoBehaviours_DAT/    # Raw binary data from MonoBehaviours
+├── AudioClips/            # WAV or raw audio files
+└── OtherAssets/           # Generic binary data from other asset types
+```
+
+### Repack a Bundle
+
+```bash
+python script.py repack ExtractedFolder/ RepackedBundle.bundle
+```
+
+**Important**: The input directory must contain the `manifest.json` file created during extraction. The original bundle file referenced in the manifest must still exist and be accessible.
 
 ## Asset Type Support
 
@@ -106,11 +99,7 @@ The script includes comprehensive error handling for:
 ## Command Line Help
 
 ```bash
-ubt --help
-ubt extract --help
-ubt repack --help
+python script.py --help
+python script.py extract --help
+python script.py repack --help
 ```
-
-## License
-
-This project is licensed under the MIT License.
