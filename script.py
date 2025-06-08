@@ -1,9 +1,68 @@
+# UnityPy Bundle Tool
+# A script for extracting and repacking Unity asset bundles.
+#
+# Developer: minhmc2007
+# GitHub:    https://github.com/minhmc2007
+
 import UnityPy
 import os
 import sys
 import json
 from PIL import Image
 import argparse
+import threading
+import time
+
+# Spinner Animation Class (Metasploit-style)
+class Spinner:
+    def __init__(self, message="Loading"):
+        self.spinner_chars = ['-', '\\', '|', '/']
+        self.base_message = message.lower()
+        self.spinning = False
+        self.thread = None
+        self.idx = 0
+
+    def _get_animated_text(self):
+        """Creates the letter-by-letter capitalization effect"""
+        if not self.base_message:
+            return self.base_message
+        
+        # Get which letter to capitalize based on animation frame
+        letter_idx = (self.idx // 2) % len(self.base_message)  # Slower letter animation
+        
+        animated_text = ""
+        for i, char in enumerate(self.base_message):
+            if i == letter_idx and char.isalpha():
+                animated_text += char.upper()
+            else:
+                animated_text += char.lower()
+        
+        return animated_text
+
+    def _spin(self):
+        while self.spinning:
+            animated_message = self._get_animated_text()
+            spinner_char = self.spinner_chars[self.idx % len(self.spinner_chars)]
+            sys.stdout.write(f'\r{animated_message} {spinner_char}')
+            sys.stdout.flush()
+            self.idx += 1
+            time.sleep(0.15)  # Slightly slower for better visual effect
+
+    def start(self):
+        self.spinning = True
+        self.thread = threading.Thread(target=self._spin)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self, final_message=None):
+        self.spinning = False
+        if self.thread:
+            self.thread.join()
+        if final_message:
+            sys.stdout.write(f'\r{final_message}\n')
+        else:
+            sys.stdout.write(f'\r{self.base_message} ✓\n')
+        sys.stdout.flush()
 
 # Helper Functions
 def ensure_dir(directory):
@@ -24,13 +83,23 @@ def extract_bundle(bundle_path, output_dir):
     print(f"\n=== Extracting Bundle ===\nInput: '{bundle_path}'\nOutput Directory: '{output_dir}'")
     ensure_dir(output_dir)
 
+    # Start spinner for UnityPy loading
+    spinner = Spinner("Loading UnityPy")
+    spinner.start()
+
     # Load the bundle
     try:
         env = UnityPy.load(bundle_path)
+        spinner.stop("Loading UnityPy ✓")
     except Exception as e:
+        spinner.stop("Loading UnityPy ✗")
         print(f"ERROR: Failed to load bundle '{bundle_path}'.\nDetails: {e}")
         print("The file might be corrupted, protected, or not a valid Unity bundle.")
         sys.exit(1)
+
+    # Start spinner for extraction process
+    extraction_spinner = Spinner("Extracting bundle")
+    extraction_spinner.start()
 
     # Initialize manifest to track extracted assets
     manifest = {
@@ -76,12 +145,11 @@ def extract_bundle(bundle_path, output_dir):
                     if img:
                         img.save(filepath)
                         asset_info["extracted_filename"] = os.path.join("Textures", filename)
-                        print(f"  Extracted {obj.type.name}: '{asset_info['extracted_filename']}'")
                         processed = True
                     else:
-                        print(f"    WARNING: {obj.type.name} '{asset_name}' has no image data.")
+                        pass  # WARNING handled silently during spinner
                 except Exception as e:
-                    print(f"    ERROR: Failed to save {obj.type.name} '{asset_name}': {e}")
+                    pass  # ERROR handled silently during spinner
 
             # Handle TextAssets
             elif obj.type.name == "TextAsset":
@@ -106,10 +174,9 @@ def extract_bundle(bundle_path, output_dir):
                             f.write(script_content)
                         asset_info["extracted_filename"] = os.path.join("TextAssets", filename_txt)
                     if asset_info["extracted_filename"]:
-                        print(f"  Extracted TextAsset: '{asset_info['extracted_filename']}'")
                         processed = True
                 except Exception as e:
-                    print(f"    ERROR: Failed to save TextAsset '{asset_name}': {e}")
+                    pass  # ERROR handled silently during spinner
 
             # Handle MonoBehaviours
             elif obj.type.name == "MonoBehaviour":
@@ -121,10 +188,9 @@ def extract_bundle(bundle_path, output_dir):
                         with open(filepath, "w", encoding="utf-8") as f:
                             json.dump(tree, f, indent=4)
                         asset_info["extracted_filename"] = os.path.join("MonoBehaviours_JSON", filename)
-                        print(f"  Extracted MonoBehaviour (JSON): '{asset_info['extracted_filename']}'")
                         processed = True
                     except Exception as e:
-                        print(f"    WARNING: Failed to save MonoBehaviour '{asset_name}' as JSON: {e}. Attempting raw data.")
+                        pass  # WARNING handled silently during spinner
                 if not processed:
                     try:
                         raw_data = getattr(obj, 'raw_data', None) or \
@@ -137,12 +203,11 @@ def extract_bundle(bundle_path, output_dir):
                                 f.write(raw_data)
                             asset_info["extracted_filename"] = os.path.join("MonoBehaviours_DAT", filename_dat)
                             asset_info["type"] = "MonoBehaviour_DAT"
-                            print(f"  Extracted MonoBehaviour (RAW): '{asset_info['extracted_filename']}'")
                             processed = True
                         else:
-                            print(f"    WARNING: MonoBehaviour '{asset_name}' has no typetree or raw data.")
+                            pass  # WARNING handled silently during spinner
                     except Exception as e:
-                        print(f"    ERROR: Failed to save MonoBehaviour '{asset_name}' as raw data: {e}")
+                        pass  # ERROR handled silently during spinner
 
             # Handle AudioClips
             elif obj.type.name == "AudioClip":
@@ -155,7 +220,6 @@ def extract_bundle(bundle_path, output_dir):
                             target_filepath = os.path.join(dirs["AudioClips"], target_filename)
                             os.rename(result, target_filepath)
                             asset_info["extracted_filename"] = os.path.join("AudioClips", target_filename)
-                            print(f"  Extracted AudioClip: '{asset_info['extracted_filename']}'")
                             processed = True
                         elif isinstance(result, bytes):
                             filename = f"{exported_name}.wav"
@@ -163,7 +227,6 @@ def extract_bundle(bundle_path, output_dir):
                             with open(filepath, "wb") as f:
                                 f.write(result)
                             asset_info["extracted_filename"] = os.path.join("AudioClips", filename)
-                            print(f"  Extracted AudioClip (bytes): '{asset_info['extracted_filename']}'")
                             processed = True
                         else:
                             filename = f"{asset_name}_{obj.path_id}.audioclipraw"
@@ -171,12 +234,11 @@ def extract_bundle(bundle_path, output_dir):
                             with open(filepath, "wb") as f:
                                 f.write(data.m_AudioData)
                             asset_info["extracted_filename"] = os.path.join("AudioClips", filename)
-                            print(f"  Extracted AudioClip (raw): '{asset_info['extracted_filename']}'")
                             processed = True
                     else:
-                        print(f"    WARNING: AudioClip '{asset_name}' has no m_AudioData.")
+                        pass  # WARNING handled silently during spinner
                 except Exception as e:
-                    print(f"    ERROR: Failed to save AudioClip '{asset_name}': {e}")
+                    pass  # ERROR handled silently during spinner
 
             # Handle Other Assets
             if not processed:
@@ -189,19 +251,20 @@ def extract_bundle(bundle_path, output_dir):
                             f.write(raw_data)
                         asset_info["extracted_filename"] = os.path.join("OtherAssets", filename)
                         asset_info["type"] += "_genericdat"
-                        print(f"  Extracted Generic Asset (RAW): '{asset_info['extracted_filename']}'")
                     else:
-                        print(f"    WARNING: Asset '{asset_name}' (Type: {obj.type.name}) has no extractable data.")
+                        pass  # WARNING handled silently during spinner
                 except Exception as e:
-                    print(f"    ERROR: Failed to save generic asset '{asset_name}' (Type: {obj.type.name}): {e}")
+                    pass  # ERROR handled silently during spinner
 
             if asset_info["extracted_filename"]:
                 manifest["assets"].append(asset_info)
 
         except Exception as e:
-            print(f"  ERROR: Failed to process object PathID {obj.path_id} (Type: {obj.type.name}): {e}")
             asset_info["extracted_filename"] = "ERROR_EXTRACTING"
             manifest["assets"].append(asset_info)
+
+    # Stop extraction spinner
+    extraction_spinner.stop("Extracting bundle ✓")
 
     # Save manifest
     manifest_path = os.path.join(output_dir, "manifest.json")
@@ -228,14 +291,23 @@ def repack_bundle(input_dir, output_bundle_path):
         print(f"ERROR: Original bundle '{original_bundle_path}' not found.\nRepacking requires the original bundle file.")
         return
 
+    # Start spinner for UnityPy loading
+    spinner = Spinner("Loading UnityPy")
+    spinner.start()
+
     print(f"Loading original bundle as template: '{original_bundle_path}'")
     env = UnityPy.load(original_bundle_path)
     modified_count = 0
 
+    spinner.stop("Loading UnityPy ✓")
+
+    # Start spinner for repacking process
+    repack_spinner = Spinner("Repacking bundle")
+    repack_spinner.start()
+
     # Process each asset in the manifest
     for asset_entry in manifest["assets"]:
         if asset_entry["extracted_filename"] == "ERROR_EXTRACTING" or not asset_entry["extracted_filename"]:
-            print(f"  Skipping PathID {asset_entry['path_id']} (Name: {asset_entry['name']}) - Extraction failed previously.")
             continue
 
         path_id = asset_entry["path_id"]
@@ -245,17 +317,14 @@ def repack_bundle(input_dir, output_bundle_path):
         modified_file_path = os.path.join(input_dir, rel_path)
 
         if not os.path.exists(modified_file_path):
-            print(f"  INFO: File '{rel_path}' (PathID: {path_id}, Name: {name}) not found. Asset unchanged.")
             continue
 
         target_obj = next((obj for obj in env.objects if obj.path_id == path_id), None)
         if not target_obj:
-            print(f"  WARNING: PathID {path_id} (Name: {name}) not found in original bundle. Skipping.")
             continue
 
         try:
             data = target_obj.read()
-            print(f"  Processing PathID {path_id} (Name: {name}, Type: {asset_type})")
             asset_updated = False
 
             # Handle Textures and Sprites
@@ -263,7 +332,6 @@ def repack_bundle(input_dir, output_bundle_path):
                 img = Image.open(modified_file_path)
                 data.image = img
                 data.save()
-                print(f"    Updated {asset_type}: '{rel_path}'")
                 asset_updated = True
 
             # Handle TextAssets
@@ -278,7 +346,6 @@ def repack_bundle(input_dir, output_bundle_path):
                 else:
                     data.script = new_script
                 data.save()
-                print(f"    Updated TextAsset: '{rel_path}'")
                 asset_updated = True
 
             # Handle MonoBehaviours (JSON)
@@ -287,10 +354,9 @@ def repack_bundle(input_dir, output_bundle_path):
                     with open(modified_file_path, "r", encoding="utf-8") as f:
                         new_tree = json.load(f)
                     target_obj.save_typetree(new_tree)
-                    print(f"    Updated MonoBehaviour (JSON): '{rel_path}'")
                     asset_updated = True
                 except Exception as e:
-                    print(f"    ERROR: Failed to update MonoBehaviour '{name}' from JSON: {e}")
+                    pass  # ERROR handled silently during spinner
 
             # Handle MonoBehaviours (Raw)
             elif asset_type == "MonoBehaviour_DAT":
@@ -299,15 +365,11 @@ def repack_bundle(input_dir, output_bundle_path):
                 if hasattr(data, 'm_Script') and isinstance(data.m_Script, bytes):
                     data.m_Script = raw_data
                     data.save()
-                    print(f"    Updated MonoBehaviour (RAW via m_Script): '{rel_path}'")
                     asset_updated = True
                 elif hasattr(data, 'raw_data') and isinstance(data.raw_data, bytes):
                     data.raw_data = raw_data
                     data.save()
-                    print(f"    Updated MonoBehaviour (RAW via raw_data): '{rel_path}'")
                     asset_updated = True
-                else:
-                    print(f"    WARNING: Cannot apply raw data to MonoBehaviour '{name}'. Skipped.")
 
             # Handle AudioClips
             elif asset_type.startswith("AudioClip"):
@@ -317,26 +379,22 @@ def repack_bundle(input_dir, output_bundle_path):
                     if hasattr(data, 'm_Size'):
                         data.m_Size = len(data.m_AudioData)
                     data.save()
-                    print(f"    Updated AudioClip: '{rel_path}'")
                     asset_updated = True
-                else:
-                    print(f"    WARNING: AudioClip '{name}' has no m_AudioData field. Skipped.")
 
             # Handle Generic Assets
             elif asset_type.endswith("_genericdat"):
                 with open(modified_file_path, "rb") as f:
                     target_obj.raw_data = f.read()
-                print(f"    Updated Generic Asset (RAW): '{rel_path}'")
                 asset_updated = True
-
-            else:
-                print(f"    INFO: Asset type '{asset_type}' not supported for repacking. Skipped.")
 
             if asset_updated:
                 modified_count += 1
 
         except Exception as e:
-            print(f"    ERROR: Failed to update PathID {path_id} (Name: {name}) from '{rel_path}': {e}")
+            pass  # ERROR handled silently during spinner
+
+    # Stop repacking spinner
+    repack_spinner.stop("Repacking bundle ✓")
 
     # Save the repacked bundle
     try:
@@ -351,25 +409,35 @@ def repack_bundle(input_dir, output_bundle_path):
 
 # Main Function with CLI
 def main():
+    print("=====================================================")
+    print("=      Unity Bundle Tool by minhmc2007              =")
+    print("=      https://github.com/minhmc2007/UBE            =")
+    print("=====================================================\n")
+    
     parser = argparse.ArgumentParser(
-        description="Extract and repack Unity .bundle files using UnityPy.",
+        description="A command-line tool to extract and repack Unity .bundle files using UnityPy.",
+        formatter_class=argparse.RawTextHelpFormatter,
         epilog="""
 Examples:
-  Extract: python script.py extract input.bundle output_folder/
-  Repack:  python script.py repack output_folder/ new.bundle
+  (Extract)  python %(prog)s extract YourBundle.bundle C:/output_folder/
+  (Repack)   python %(prog)s repack C:/output_folder/ NewBundle.bundle
+
+-----------------------------------------------------------------
+Developed by minhmc2007 (https://github.com/minhmc2007)
+-----------------------------------------------------------------
 """
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command", required=True, help="Available commands")
 
     # Extract Command
-    extract_parser = subparsers.add_parser("extract", help="Extract a .bundle file.")
-    extract_parser.add_argument("bundle_file", help="Path to the .bundle file.")
-    extract_parser.add_argument("output_dir", help="Directory for extracted assets.")
+    extract_parser = subparsers.add_parser("extract", help="Extract a .bundle file into a structured folder.")
+    extract_parser.add_argument("bundle_file", help="Path to the input .bundle file.")
+    extract_parser.add_argument("output_dir", help="Directory where assets will be extracted.")
 
     # Repack Command
-    repack_parser = subparsers.add_parser("repack", help="Repack assets into a .bundle file.")
+    repack_parser = subparsers.add_parser("repack", help="Repack a folder into a .bundle file.")
     repack_parser.add_argument("input_dir", help="Directory with extracted assets and manifest.json.")
-    repack_parser.add_argument("output_bundle_file", help="Path for the repacked .bundle file.")
+    repack_parser.add_argument("output_bundle_file", help="Path for the new repacked .bundle file.")
 
     args = parser.parse_args()
 
