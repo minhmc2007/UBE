@@ -15,17 +15,14 @@ A Python script for extracting and repacking Unity .bundle files using UnityPy. 
 - Automatic file sanitization and organization
 - Detailed manifest tracking for reliable repacking
 
-## Requirements
-
-```bash
-pip install UnityPy Pillow
-```
-
 ## Installation
 
-1. Save the script as `script.py`
-2. Install required dependencies
-3. Run from command line
+```bash
+pip install unity-bundle-tool
+```
+Or use this script.py
+
+For install via pip, you can run 'ubt' in your terminal 
 
 ## Usage
 
