@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unity-bundle-tool"
-version = "0.1.1" # Incremented version slightly
+version = "1.0.0" # Incremented version slightly
 authors = [
-  { name="minhmc2007", email="author@example.com" },
+  { name="minhmc2007", email="quangminh21072010@gmail.com" },
 ]
 description = "A command-line tool to extract and repack Unity asset bundles using UnityPy."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file="LICENSE" }
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/minhmc2007/unity-bundle-tool"
-Repository = "https://github.com/minhmc2007/unity-bundle-tool"
+Homepage = "https://github.com/minhmc2007/UBT"
+Repository = "https://github.com/minhmc2007/UBT"
 
 [project.scripts]
-# This creates the command 'ubt' that runs your script's main() function
+# This creates the command 'ubt' that runs script's main() function
 ubt = "unity_bundle_tool.cli:main"

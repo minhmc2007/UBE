@@ -411,7 +411,7 @@ def repack_bundle(input_dir, output_bundle_path):
 def main():
     print("=====================================================")
     print("=      Unity Bundle Tool by minhmc2007              =")
-    print("=      https://github.com/minhmc2007/UBE            =")
+    print("=      https://github.com/minhmc2007/UBT            =")
     print("=====================================================\n")
     
     parser = argparse.ArgumentParser(
